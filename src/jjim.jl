@@ -21,6 +21,9 @@ md"""
 # Front Matter
 """
 
+# ╔═╡ 0f062b77-2c78-4340-b59f-1a1a9f5c6523
+LETTERS = join([collect('A':'Z'); collect('a':'z')])
+
 # ╔═╡ 9fcb922f-e19c-479b-af87-d035b732baca
 md"""
 # Download Data
@@ -99,7 +102,7 @@ MIN_LENGTH_JOKE, MAX_LENGTH_JOKE = 8, 15;
 BADS = [4, 17];
 
 # ╔═╡ a0412db8-9a74-4745-a5d6-498575e7249e
-_length(word) = length(findall(x -> occursin(x, join([collect('A':'Z'); collect('a':'z')])), word))
+_length(word) = length(findall(x -> occursin(x, LETTERS), word))
 
 # ╔═╡ 2a89cdfb-24ce-4e9e-b3c3-ca094b597e21
 _jokes_filtered = jokes_raw[findall(x -> MIN_LENGTH_JOKE < _length(x) < MAX_LENGTH_JOKE, jokes_raw.punchline), [:setup, :punchline]] 
@@ -116,14 +119,19 @@ md"""
 MIN_LENGTH_WORD, MAX_LENGTH_WORD = 5, 8;
 
 # ╔═╡ 5db5225a-7dd4-40d5-8829-fc6e48ec9df6
-words_filtered = filter(
-	x -> (MIN_LENGTH_WORD <= length(x) <= MAX_LENGTH_WORD) && 
-	issubset(collect(Set(x)), [collect('A':'Z'); collect('a':'z')]) &&
-	!(x in profanity_raw), 
-	words_raw) .|> String
+begin
+	words_filtered = filter(
+		x -> (MIN_LENGTH_WORD <= length(x) <= MAX_LENGTH_WORD) && 
+		issubset(collect(Set(x)), [collect('A':'Z'); collect('a':'z')]) &&
+		!(x in profanity_raw), 
+		words_raw) .|> String
 
-# ╔═╡ 478e50b8-54d5-4af4-8074-9f84baaaf7a2
-length(words_filtered) # 5534
+	cms = countmap.(words_filtered)
+	words_filtered = [words_filtered[i] for i = 1:length(words_filtered) if !(cms[i] in cms[union(1:i-1, i+1:end)])] # filter anagram
+end
+
+# ╔═╡ 9a6cb399-1233-4cba-a93b-242d40a098bc
+length(words_filtered)
 
 # ╔═╡ d6e1bbe3-fc5f-4772-9ae2-71ff6069699e
 md"""
@@ -263,20 +271,10 @@ function jumble_solve(target_freqs;
 	return (WORD_SOL1, words_filtered[WORD_SOL1], sol2circles(WORD_SOL1, WORD_SOL2))
 end
 
-# ╔═╡ 2bd543c5-9642-41c1-b7aa-a6f5bece6c2d
-TARGET_TEST = JOKES_FREQS[2,:]
-
-# ╔═╡ c611b0dc-24be-41d5-910b-7880006cb8d9
-s1, ws, cs = jumble_solve(TARGET_TEST, excludes = [3])
-
-# ╔═╡ f1f1680d-12f6-4668-a2e4-dfa332f68337
-s1
-
-# ╔═╡ 096894cc-deac-48f9-b3ed-4e3dc4486e43
-ws
-
-# ╔═╡ 04af1d9d-c0cc-4e80-89b1-5fc5cb243f3c
-cs
+# ╔═╡ 61df717b-f7c8-4c24-bb4f-1e0c7f6b9508
+md"""
+## Main Loop
+"""
 
 # ╔═╡ 493388eb-fe8f-49ea-8af0-18ff48bd5202
 let
@@ -297,7 +295,7 @@ let
 			"words" => ws,
 			"circles" => cs,
 			"words_jumbled" => [join(collect(ws[i])[shuff[i]]) for i = 1:length(ws)],
-			"circles_jumbled" => [cs[i][shuff[i]] for i = 1:length(ws)],
+			# "circles_jumbled" => [cs[i][shuff[i]] for i = 1:length(ws)],
 		)
 		push!(jumbles, d)
 		append!(excludes, s)
@@ -306,17 +304,69 @@ let
 	jumbles
 end
 
+# ╔═╡ 7d62da61-ab36-4904-9b94-07e32648e597
+md"""
+# Writing
+"""
+
 # ╔═╡ f410ee4a-51ab-4571-b926-62d0ba5cfcec
 let
 	jb = jumbles |> DataFrame
-	jb = jb[:,[:setup, :punchline, :words, :circles, :words_jumbled, :circles_jumbled]]
+	jb = jb[:,[:setup, :punchline, :words, :circles, :words_jumbled]]
 end
 
 # ╔═╡ 863b2898-d4ce-4892-9eb0-44f53ebff8b2
 let
-	io = open("myfile.txt", "w")
-	write(io, "Hello world!")
-	close(io)
+	outfile_qs = "jumbles_qs.txt"
+	outfile_sols = "jumbles_sols.txt"
+	
+	rm(outfile_qs, force = true)
+	rm(outfile_sols, force = true)
+	io_qs = open(outfile_qs, "w")
+	io_sols = open(outfile_sols, "w")
+
+	for i = 1:3
+		### QUESTIONS
+		write(io_qs, "---------------\n")
+		write(io_qs, "- JUMBLE $(i) -\n")
+		write(io_qs, "---------------\n\n")
+
+		jum = jumbles[i]
+		n_words = length(jum["words"])
+		write(io_qs, "$(jum["setup"])\n\n")
+
+		punchline = map(x -> x in LETTERS ? " _ " : x == ' ' ? "   " : x, collect(jum["punchline"]))
+		punchline = join(punchline)[2:end]
+		write(io_qs, "$(punchline)\n\n")
+
+		### SOLUTIONS
+		write(io_sols, "---------------\n")
+		write(io_sols, "- JUMBLE $(i) -\n")
+		write(io_sols, "---------------\n\n")
+
+		write(io_sols, "$(jum["setup"])\n\n")
+		write(io_sols, "$(jum["punchline"])\n\n")
+		
+		for w = 1:length(jum["words"])
+			### QUESTIONS
+			word = uppercase(jum["words_jumbled"][w])
+			word = [jum["circles"][w][j] == 1 ? " [$(word[j])] " : " $(word[j]) " for j in 1:length(word)] |> join |> x -> x[2:end]
+			write(io_qs, "$(word)\n")
+
+			### SOLUTIONS
+			word = uppercase(jum["words"][w])
+			word = [jum["circles"][w][j] == 1 ? " [$(word[j])] " : " $(word[j]) " for j in 1:length(word)] |> join |> x -> x[2:end]
+			write(io_sols, "$(word)\n")
+		end
+
+		write(io_qs, "\n")
+		write(io_sols, "\n")
+	end
+	
+	close(io_qs)
+	close(io_sols)
+
+	nothing
 end
 
 # ╔═╡ 66b0c2a8-af87-11ef-0595-170fc4944fcb
@@ -1134,6 +1184,7 @@ version = "17.4.0+2"
 # ╔═╡ Cell order:
 # ╟─7d22e644-7950-4e8d-af52-f35a8595ae2f
 # ╠═8d67612a-401d-4b94-b41c-4e0e4f7b469c
+# ╠═0f062b77-2c78-4340-b59f-1a1a9f5c6523
 # ╟─9fcb922f-e19c-479b-af87-d035b732baca
 # ╟─35a3f80c-03af-422f-ad0a-4c6d2b02132d
 # ╠═7317f5fa-0e22-4074-a7aa-b356cf69c001
@@ -1149,7 +1200,7 @@ version = "17.4.0+2"
 # ╟─81a8ab29-87c2-496c-acb7-4acac9d5a00d
 # ╠═ded83cb7-d13d-452b-a2a9-5fb2281805ab
 # ╠═5db5225a-7dd4-40d5-8829-fc6e48ec9df6
-# ╠═478e50b8-54d5-4af4-8074-9f84baaaf7a2
+# ╠═9a6cb399-1233-4cba-a93b-242d40a098bc
 # ╟─d6e1bbe3-fc5f-4772-9ae2-71ff6069699e
 # ╟─82c12cd1-1bc2-4268-aca0-f0ec4a05b1ea
 # ╠═51d73e47-9262-4d44-9edf-a4812e320427
@@ -1160,12 +1211,9 @@ version = "17.4.0+2"
 # ╟─d817da69-e1c7-457b-af5a-6c1bf0aadf28
 # ╟─78105619-6434-42c6-8b3b-c6033be64ff2
 # ╟─bd936471-e8ed-4e57-b586-f10326019c13
-# ╠═2bd543c5-9642-41c1-b7aa-a6f5bece6c2d
-# ╠═c611b0dc-24be-41d5-910b-7880006cb8d9
-# ╠═f1f1680d-12f6-4668-a2e4-dfa332f68337
-# ╠═096894cc-deac-48f9-b3ed-4e3dc4486e43
-# ╠═04af1d9d-c0cc-4e80-89b1-5fc5cb243f3c
+# ╟─61df717b-f7c8-4c24-bb4f-1e0c7f6b9508
 # ╠═493388eb-fe8f-49ea-8af0-18ff48bd5202
+# ╟─7d62da61-ab36-4904-9b94-07e32648e597
 # ╠═f410ee4a-51ab-4571-b926-62d0ba5cfcec
 # ╠═863b2898-d4ce-4892-9eb0-44f53ebff8b2
 # ╟─66b0c2a8-af87-11ef-0595-170fc4944fcb
