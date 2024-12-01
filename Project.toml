@@ -1,0 +1,4 @@
+name = "JumbleJim"
+uuid = "f8df98cc-d2c5-4dab-a2d6-fd324107c7d1"
+authors = ["Gage <gage.bonner@gmail.com>"]
+version = "0.1.0"
