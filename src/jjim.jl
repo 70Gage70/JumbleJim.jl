@@ -99,7 +99,7 @@ md"""
 MIN_LENGTH_JOKE, MAX_LENGTH_JOKE = 8, 15;
 
 # ╔═╡ 10a0bf59-7d5d-49e3-86c7-d9ae086ba460
-BADS = [4, 17];
+BADS = [4, 17, 138, 141, 202];
 
 # ╔═╡ a0412db8-9a74-4745-a5d6-498575e7249e
 _length(word) = length(findall(x -> occursin(x, LETTERS), word))
@@ -108,7 +108,7 @@ _length(word) = length(findall(x -> occursin(x, LETTERS), word))
 _jokes_filtered = jokes_raw[findall(x -> MIN_LENGTH_JOKE < _length(x) < MAX_LENGTH_JOKE, jokes_raw.punchline), [:setup, :punchline]] 
 
 # ╔═╡ aea601a1-f030-407b-84e5-d657618edf47
-jokes_filtered = _jokes_filtered |> x -> x[setdiff(1:nrow(x), BADS), :];
+jokes_filtered = _jokes_filtered |> x -> x[setdiff(1:nrow(x), BADS), :]
 
 # ╔═╡ 81a8ab29-87c2-496c-acb7-4acac9d5a00d
 md"""
@@ -116,7 +116,7 @@ md"""
 """
 
 # ╔═╡ ded83cb7-d13d-452b-a2a9-5fb2281805ab
-MIN_LENGTH_WORD, MAX_LENGTH_WORD = 5, 8;
+MIN_LENGTH_WORD, MAX_LENGTH_WORD = 5, 7;
 
 # ╔═╡ 5db5225a-7dd4-40d5-8829-fc6e48ec9df6
 begin
@@ -283,9 +283,20 @@ let
 	global jumbles = Vector{Dict}()
 	excludes = Vector{Int64}()
 
-	for i = 1:5 #size(JOKES_FREQS, 1)
-		@info i/5 #size(JOKES_FREQS, 1)
-		s, ws, cs = jumble_solve(JOKES_FREQS[i,:], excludes = excludes)
+	for i = 1:size(JOKES_FREQS, 1)
+		@info "Joke $(i)"
+		@info "Fraction done = $(i/size(JOKES_FREQS, 1))"
+
+		s, ws, cs = (nothing, nothing, nothing)
+		try
+			s, ws, cs = jumble_solve(JOKES_FREQS[i,:], excludes = excludes)
+		catch
+			@info "EXCLUDE BRANCH"
+			excludes = Vector{Int64}()
+			s, ws, cs = jumble_solve(JOKES_FREQS[i,:], excludes = excludes)
+		end
+
+		@info length(excludes)
 
 		shuff = [shuffle(1:length(ws[i])) for i = 1:length(ws)]
 		
@@ -299,6 +310,8 @@ let
 		)
 		push!(jumbles, d)
 		append!(excludes, s)
+
+		@info ""
 	end
 
 	jumbles
@@ -315,6 +328,9 @@ let
 	jb = jb[:,[:setup, :punchline, :words, :circles, :words_jumbled]]
 end
 
+# ╔═╡ 4eb8557f-abd0-49eb-aac8-f27073479030
+[j["words"] for j in jumbles] |> x -> vcat(x...) |> countmap |> x -> [value for (key, value) in x] |> x -> sort(x, rev = true)
+
 # ╔═╡ 863b2898-d4ce-4892-9eb0-44f53ebff8b2
 let
 	outfile_qs = "jumbles_qs.txt"
@@ -325,7 +341,7 @@ let
 	io_qs = open(outfile_qs, "w")
 	io_sols = open(outfile_sols, "w")
 
-	for i = 1:3
+	for i = 1:length(jumbles)
 		### QUESTIONS
 		write(io_qs, "---------------\n")
 		write(io_qs, "- JUMBLE $(i) -\n")
@@ -1215,6 +1231,7 @@ version = "17.4.0+2"
 # ╠═493388eb-fe8f-49ea-8af0-18ff48bd5202
 # ╟─7d62da61-ab36-4904-9b94-07e32648e597
 # ╠═f410ee4a-51ab-4571-b926-62d0ba5cfcec
+# ╠═4eb8557f-abd0-49eb-aac8-f27073479030
 # ╠═863b2898-d4ce-4892-9eb0-44f53ebff8b2
 # ╟─66b0c2a8-af87-11ef-0595-170fc4944fcb
 # ╟─a190f1bf-7b00-48fc-8836-4295e3655447
