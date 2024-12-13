@@ -40,7 +40,7 @@ jumbles = jldopen("jumbles.jld2")["jumble"]
 jumbles[10,:]
 
 # ╔═╡ 4d13d785-82d7-4bfd-bc40-e17285a189b5
-JOKE_IDX = 20;
+JOKE_IDX = 10;
 
 # ╔═╡ a31b7b1e-da64-4ea5-8860-ee7cab52197e
 begin

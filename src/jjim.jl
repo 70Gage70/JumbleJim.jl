@@ -218,11 +218,11 @@ end
 
 # ╔═╡ 78105619-6434-42c6-8b3b-c6033be64ff2
 """
-	sol2circles(sol1, sol2)
+	sol2circles(sol1, sol2, wfs)
 """
-function sol2circles(sol1, sol2)
+function sol2circles(sol1, sol2, wfs)
 	
-	words = words_filtered[sol1]
+	words = wfs[sol1]
 	circles = Vector{Int64}[]
 
 	for i = 1:length(words)
@@ -240,14 +240,16 @@ end
 
 # ╔═╡ bd936471-e8ed-4e57-b586-f10326019c13
 """
-	jumble_solve(target_freqs; excludes = Int64[], hints_bounds = (4, 6), max_letters_per_word = 3)
+	jumble_solve(target_freqs, words, wfs; excludes = Int64[], hints_bounds = (4, 6))
 """
-function jumble_solve(target_freqs; 
+function jumble_solve(
+	target_freqs,
+	words,
+	wfs;
 	excludes::Vector{<:Integer} = Int64[], 
-	hints_bounds::Tuple{Integer, Integer} = (4, 6), 
-	max_letters_per_word::Integer = 3)
+	hints_bounds::Tuple{Integer, Integer} = (4, 6))
 	
-	WORDS = take_n(WORDS_FREQS, max_letters_per_word)
+	WORDS = words #take_n(WORDS_FREQS, max_letters_per_word)
 	N_WORDS = size(WORDS, 1) # number of words to choose from
 	N_HINTS_MIN, N_HINTS_MAX = hints_bounds
 
@@ -278,7 +280,7 @@ function jumble_solve(target_freqs;
 	WORD_SOL2 = Int64.(value.(y))
 	
 
-	return (WORD_SOL1, words_filtered[WORD_SOL1], sol2circles(WORD_SOL1, WORD_SOL2))
+	return (WORD_SOL1, wfs[WORD_SOL1], sol2circles(WORD_SOL1, WORD_SOL2, wfs))
 end
 
 # ╔═╡ 61df717b-f7c8-4c24-bb4f-1e0c7f6b9508
@@ -291,19 +293,42 @@ let
 	Random.seed!(1234)
 	
 	global jumbles = Vector{Dict}()
+	n_fails = 0
+	n_fails_stride = 3
 	excludes = Vector{Int64}()
 
+	WFS = deepcopy(WORDS_FREQS)
+	wfs = deepcopy(words_filtered)
+	
 	for i = 1:size(JOKES_FREQS, 1)
 		@info "Joke $(i)"
 		@info "Fraction done = $(i/size(JOKES_FREQS, 1))"
-
+		
 		s, ws, cs = (nothing, nothing, nothing)
+		idx = (1 + n_fails*100):(1 + (n_fails + n_fails_stride)*100)
 		try
-			s, ws, cs = jumble_solve(JOKES_FREQS[i,:], excludes = excludes)
+			s, ws, cs = jumble_solve(JOKES_FREQS[i,:], take_n(WFS[idx,:], 3), wfs[idx], excludes = excludes)
 		catch
-			@info "EXCLUDE BRANCH"
-			excludes = Vector{Int64}()
-			s, ws, cs = jumble_solve(JOKES_FREQS[i,:], excludes = excludes)
+			
+			try
+				@info "EXCLUDE BRANCH"
+				excludes = Vector{Int64}()
+				n_fails += n_fails_stride
+	
+				idx = (1 + n_fails*100):(1 + (n_fails + n_fails_stride)*100)
+				s, ws, cs = jumble_solve(JOKES_FREQS[i,:], take_n(WFS[idx,:], 3), wfs[idx], excludes = excludes)
+			catch
+				@info "RESTART BRANCH"
+				excludes = Vector{Int64}()
+				n_fails = 0
+				idx = (1 + n_fails*100):(1 + (n_fails + n_fails_stride)*100)
+
+				sp = randperm(length(wfs))
+				WFS = WFS[sp, :]
+				wfs = wfs[sp]
+				
+				s, ws, cs = jumble_solve(JOKES_FREQS[i,:], take_n(WFS[idx,:], 3), wfs[idx], excludes = excludes)
+			end
 		end
 
 		@info length(excludes)
@@ -1285,7 +1310,7 @@ version = "17.4.0+2"
 # ╟─c3cc502b-c263-44b6-9ff6-fa2a04eb3da5
 # ╟─d817da69-e1c7-457b-af5a-6c1bf0aadf28
 # ╟─78105619-6434-42c6-8b3b-c6033be64ff2
-# ╠═bd936471-e8ed-4e57-b586-f10326019c13
+# ╟─bd936471-e8ed-4e57-b586-f10326019c13
 # ╟─61df717b-f7c8-4c24-bb4f-1e0c7f6b9508
 # ╠═493388eb-fe8f-49ea-8af0-18ff48bd5202
 # ╟─7d62da61-ab36-4904-9b94-07e32648e597
