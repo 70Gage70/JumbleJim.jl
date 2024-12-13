@@ -76,13 +76,21 @@ begin
 	download(PROFANITY_RAW)
 	profanity_raw = path(PROFANITY_RAW) |> x -> JSON.parsefile(x, dicttype=Dict, inttype=Int64, use_mmap=true)
 
+	# @RemoteFile(
+	#     WORDS_RAW, 
+	#     "https://raw.githubusercontent.com/david47k/top-english-wordlists/master/top_english_words_lower_10000.txt",
+	#     updates=:never)
+
+	# download(WORDS_RAW)
+	# words_raw = path(WORDS_RAW) |> x -> CSV.read(x, DataFrame, header = 0).Column1 |> collect
+
 	@RemoteFile(
-	    WORDS_RAW, 
-	    "https://raw.githubusercontent.com/david47k/top-english-wordlists/master/top_english_words_lower_10000.txt",
+	    WORDS_RAW2, 
+	    "https://raw.githubusercontent.com/dolph/dictionary/refs/heads/master/popular.txt",
 	    updates=:never)
 
-	download(WORDS_RAW)
-	words_raw = path(WORDS_RAW) |> x -> CSV.read(x, DataFrame, header = 0).Column1 |> collect
+	download(WORDS_RAW2)
+	words_raw = path(WORDS_RAW2) |> x -> CSV.read(x, DataFrame, header = 0).Column1 |> collect |> shuffle
 	
 	nothing
 end
@@ -126,15 +134,14 @@ begin
 	words_filtered = filter(
 		x -> (MIN_LENGTH_WORD <= length(x) <= MAX_LENGTH_WORD) && 
 		issubset(collect(Set(x)), [collect('A':'Z'); collect('a':'z')]) &&
-		!(x in profanity_raw), 
+		!(x in profanity_raw) &&
+		length(unique(x)) > 3, 
 		words_raw) .|> String
 
 	cms = countmap.(words_filtered)
 	words_filtered = [words_filtered[i] for i = 1:length(words_filtered) if !(cms[i] in cms[union(1:i-1, i+1:end)])] # filter anagram
+	words_filtered = words_filtered[1:3000]
 end
-
-# ╔═╡ 9a6cb399-1233-4cba-a93b-242d40a098bc
-length(words_filtered)
 
 # ╔═╡ d6e1bbe3-fc5f-4772-9ae2-71ff6069699e
 md"""
@@ -1269,7 +1276,6 @@ version = "17.4.0+2"
 # ╟─81a8ab29-87c2-496c-acb7-4acac9d5a00d
 # ╠═ded83cb7-d13d-452b-a2a9-5fb2281805ab
 # ╠═5db5225a-7dd4-40d5-8829-fc6e48ec9df6
-# ╠═9a6cb399-1233-4cba-a93b-242d40a098bc
 # ╟─d6e1bbe3-fc5f-4772-9ae2-71ff6069699e
 # ╟─82c12cd1-1bc2-4268-aca0-f0ec4a05b1ea
 # ╠═51d73e47-9262-4d44-9edf-a4812e320427
@@ -1279,7 +1285,7 @@ version = "17.4.0+2"
 # ╟─c3cc502b-c263-44b6-9ff6-fa2a04eb3da5
 # ╟─d817da69-e1c7-457b-af5a-6c1bf0aadf28
 # ╟─78105619-6434-42c6-8b3b-c6033be64ff2
-# ╟─bd936471-e8ed-4e57-b586-f10326019c13
+# ╠═bd936471-e8ed-4e57-b586-f10326019c13
 # ╟─61df717b-f7c8-4c24-bb4f-1e0c7f6b9508
 # ╠═493388eb-fe8f-49ea-8af0-18ff48bd5202
 # ╟─7d62da61-ab36-4904-9b94-07e32648e597
