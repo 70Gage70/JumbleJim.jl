@@ -136,6 +136,118 @@ let
 	fig
 end
 
+# ╔═╡ bc17dc28-4596-453f-b8c3-58f28632d3bf
+"""
+	jumble_q(idx, outfile)
+"""
+function jumble_q(idx, outfile)
+	set_theme!(theme_latexfonts())
+	fig = Figure(fontsize = 21)
+	ax = Axis(fig[1, 1], limits = (0, 1, 0, 1), height = 600, width = 1200)
+	hidedecorations!(ax)
+	##############################
+
+	setup = jumbles[idx, :setup]
+	text!(ax, 0.05, 0.9, text = setup)
+	
+	punchline = jumbles[idx, :punchline] |> punchline2spaces |> collect
+	for i = 1:length(punchline)
+		c = punchline[i] |> x -> x == '_' ? "__" : string(x)
+		text!(ax, 0.05 + 0.04*(i - 1), 0.7, text = c, font = :bold)
+	end
+
+	words = jumbles[idx, :words_jumbled]
+	for w_idx = 1:length(words)
+		# the word itself
+		w = words[w_idx] |> uppercase
+		text!(ax, 0.05, 0.65 - 0.1*w_idx, text = w)
+
+		# spaces
+		circles = jumbles[idx, :circles][w_idx]
+		for i = 1:length(w)
+			xmin = 0.15 + 0.04*i
+			xmax = 0.15 + 0.04*i + 0.03
+			y = 0.65 - 0.1*w_idx
+			ϵ = 0.01
+			
+			hlines!(ax, y, xmin = xmin, xmax = xmax, color = :black, linewidth = 2)
+			if circles[i] == 1
+				poly!(ax, Rect(xmin, y + ϵ, xmax - xmin, 0.05), color = :white, strokewidth = 1.5)
+			end
+		end
+	end
+
+	resize_to_layout!(fig)
+	
+	save(outfile, fig)
+
+	return nothing
+end
+
+# ╔═╡ 5c04ef9e-e6ae-4125-8868-ee934b94af0f
+"""
+	jumble_s(idx, outfile)
+"""
+function jumble_s(idx, outfile)
+	set_theme!(theme_latexfonts())
+	fig = Figure(fontsize = 21)
+	ax = Axis(fig[1, 1], limits = (0, 1, 0, 1), height = 600, width = 1200)
+	hidedecorations!(ax)
+	##############################
+
+	setup = jumbles[idx, :setup]
+	text!(ax, 0.05, 0.9, text = setup)
+	
+	punchline = jumbles[idx, :punchline] |> punchline2spaces |> collect
+	for i = 1:length(punchline)
+		c = punchline[i] |> x -> x == '_' ? "__" : string(x)
+		text!(ax, 0.05 + 0.04*(i - 1), 0.7, text = c, font = :bold)
+
+		# solution
+		pl = jumbles[idx, :punchline] |> uppercase
+		c = collect(pl)[i] |> x -> x in collect('A':'Z') ? string(x) : " "
+		text!(ax, 0.05 + 0.04*(i - 1) + 0.01, 0.7 + 0.01, text = c, font = :bold)
+	end
+
+	words = jumbles[idx, :words_jumbled]
+	for w_idx = 1:length(words)
+		# the word itself
+		w = words[w_idx] |> uppercase
+		text!(ax, 0.05, 0.65 - 0.1*w_idx, text = w)
+
+		# spaces
+		circles = jumbles[idx, :circles][w_idx]
+		for i = 1:length(w)
+			xmin = 0.15 + 0.04*i
+			xmax = 0.15 + 0.04*i + 0.03
+			y = 0.65 - 0.1*w_idx
+			ϵ = 0.01
+			
+			hlines!(ax, y, xmin = xmin, xmax = xmax, color = :black, linewidth = 2)
+			if circles[i] == 1
+				poly!(ax, Rect(xmin, y + ϵ, xmax - xmin, 0.05), color = :white, strokewidth = 1.5)
+			end
+			
+			word = jumbles[idx, :words][w_idx]
+			text!(ax, (xmin + xmax)/2 - 0.005, y + 0.015, text = string(collect(uppercase(word))[i]))
+		end
+	end
+
+	resize_to_layout!(fig)
+	
+	save(outfile, fig)
+
+	return nothing
+end
+
+# ╔═╡ 754e5e09-8362-4b05-96ab-6d0f50bc2786
+let
+	for idx = 1:size(jumbles, 1)
+		jumble_q(1, "../figs/jumble_$(lpad(idx, 3, "0"))_q.svg")
+		jumble_s(1, "../figs/jumble_$(lpad(idx, 3, "0"))_s.svg")
+	end
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1748,7 +1860,10 @@ version = "3.6.0+0"
 # ╠═c4e303f1-7256-4d69-8255-8bdc0d29e5dc
 # ╠═4bdb5a86-37d5-45b8-8b61-16707e4f0d8d
 # ╠═4d13d785-82d7-4bfd-bc40-e17285a189b5
-# ╠═a31b7b1e-da64-4ea5-8860-ee7cab52197e
-# ╠═a541889e-319c-49b9-84d2-1ae29481f00a
+# ╟─a31b7b1e-da64-4ea5-8860-ee7cab52197e
+# ╟─a541889e-319c-49b9-84d2-1ae29481f00a
+# ╟─bc17dc28-4596-453f-b8c3-58f28632d3bf
+# ╟─5c04ef9e-e6ae-4125-8868-ee934b94af0f
+# ╠═754e5e09-8362-4b05-96ab-6d0f50bc2786
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
