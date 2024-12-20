@@ -40,7 +40,7 @@ jumbles = jldopen("jumbles.jld2")["jumble"]
 jumbles[10,:]
 
 # ╔═╡ 4d13d785-82d7-4bfd-bc40-e17285a189b5
-JOKE_IDX = 10;
+JOKE_IDX = 12;
 
 # ╔═╡ a31b7b1e-da64-4ea5-8860-ee7cab52197e
 begin
@@ -242,9 +242,16 @@ end
 
 # ╔═╡ 754e5e09-8362-4b05-96ab-6d0f50bc2786
 let
+	n_written = 1
 	for idx = 1:size(jumbles, 1)
-		jumble_q(1, "../figs/jumble_$(lpad(idx, 3, "0"))_q.svg")
-		jumble_s(1, "../figs/jumble_$(lpad(idx, 3, "0"))_s.svg")
+		@info idx/size(jumbles, 1)
+		try
+			jumble_q(idx, "../figs/jumble_$(lpad(n_written, 3, "0"))_q.svg")
+			jumble_s(idx, "../figs/jumble_$(lpad(n_written, 3, "0"))_s.svg")
+			n_written += 1
+		catch
+			nothing
+		end
 	end
 end
 
